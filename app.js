@@ -1,47 +1,57 @@
-const formulario = document.querySelector('#agregar-gasto');
+const formPresupuesto = document.querySelector('#agregar-presupuesto')
+const formGasto = document.querySelector('#agregar-gasto');
 const gastoListado = document.querySelector('#gastos ul')
 const total = document.querySelector('#total')
 const cantidadRestante = document.querySelector('#restante')
 
-let presupuesto;
-eventListeners();
+let presupuestoUsuario;
 
 
-function eventListeners(){
-    document.addEventListener('DOMContentLoaded', preguntarPresupuesto)
-    formulario.addEventListener('submit', agregarGasto )
-}
+formPresupuesto.addEventListener('submit', validarPresupuesto)
+formGasto.addEventListener('submit', agregarGasto )
 
 // Clases
 class Presupuesto {
-    constructor(presupuesto){
-        this.presupuesto = Number(presupuesto);
-        this.restante = Number(presupuesto);
+    constructor(presupuestoUsuario){
+        this.presupuesto = Number(presupuestoUsuario);
+        this.restante = Number(presupuestoUsuario);
         this.gastos = [];
     }
     nuevoGasto(gasto){
         this.gastos = [...this.gastos, gasto]
+        this.calcularRestante()
+    }
+    calcularRestante(){
+        const gastoTotal = this.gastos.reduce( (total , gasto) => total + gasto.cantidad , 0 )
+        console.log(gastoTotal)
+        this.restante = this.presupuesto - gastoTotal
 
     }
 }
-class UI{
 
-    mostrarPresupuesto(cantidad){
-        const {presupuesto , restante} = cantidad
+
+class UI{
+    mostrarPresupuesto(presupuestoUsuario){
+        const {presupuesto , restante } = presupuestoUsuario
         total.textContent = presupuesto;
         cantidadRestante.textContent = restante;
     }
-    imprimirAlerta(mensaje,tipo){
+    imprimirAlerta(mensaje,color,tipo){
         const divMensaje = document.createElement('div');
         divMensaje.textContent = mensaje;
         divMensaje.classList.add('alert','text-center')
-        if(tipo === 'danger'){
+        if(color === 'danger'){
             divMensaje.classList.add('alert-danger')
         }else{
             divMensaje.classList.add('alert-success')
         }
-        const contenedor = document.querySelector('.primario');
-        contenedor.insertBefore(divMensaje,formulario)
+        if(tipo === 'formPresupuesto'){
+            const contenedor = document.querySelector('.inicio');
+            contenedor.insertBefore(divMensaje,formPresupuesto)
+        } else{
+            const contenedor = document.querySelector('.primario');
+            contenedor.insertBefore(divMensaje,formGasto)
+        }
         setTimeout(()=>{
             divMensaje.remove()
         },3000)
@@ -75,6 +85,9 @@ class UI{
             gastoListado.removeChild(gastoListado.firstChild)
         }
     }
+    actualizarRestante(restante){
+        cantidadRestante.textContent = restante;
+    }
 
 }
 
@@ -82,35 +95,35 @@ const ui = new UI()
 
 
 // Funciones
-function preguntarPresupuesto(){
-    const presupuestoUsuario = prompt('Cual es tu presupuesto ?')
-    if(presupuestoUsuario === '' || presupuestoUsuario=== null ||  isNaN(presupuestoUsuario) || presupuestoUsuario <= 0 ) {
-        window.location.reload();
-        //preguntarPresupuesto();
+function validarPresupuesto(e){
+    e.preventDefault();
+    const presupuesto = document.querySelector('#presupuestoSemanal').value;
+    if(presupuesto === '' || presupuesto=== null ||  isNaN(presupuesto) || presupuesto <= 0 ) {
+        return ui.imprimirAlerta("Cantidad no valida", "danger",'formPresupuesto')
     }
-    presupuesto = new Presupuesto(presupuestoUsuario)
-    ui.mostrarPresupuesto(presupuesto)
+    presupuestoUsuario = new Presupuesto(presupuesto)
+    ui.mostrarPresupuesto(presupuestoUsuario)
 }
 
 function  agregarGasto(e){
     e.preventDefault();
     const nombre = document.querySelector('#gasto').value;
-    const cantidad = document.querySelector('#cantidad').value;
+    const cantidad =  Number ( document.querySelector('#cantidad').value ) ;
 
     if(nombre ===  '' || cantidad === ''){
-        return ui.imprimirAlerta("Ambos campos vacios", "danger")
+        return ui.imprimirAlerta("Ambos campos vacios", "danger","formGasto")
     }else if (isNaN(cantidad)){
         return ui.imprimirAlerta("Cantidad no valida", "danger")
     }
     const gasto = {nombre, cantidad , id: Date.now(),}
-    presupuesto.nuevoGasto(gasto)
+    presupuestoUsuario.nuevoGasto(gasto)
 
-    ui.imprimirAlerta("Agregando Gasto", )
+    ui.imprimirAlerta("Agregando Gasto" )
 
-    const {gastos} = presupuesto
+    const {gastos , restante} = presupuestoUsuario
     ui.agregarGastoListado(gastos)
-
-    formulario.reset();
+    ui.actualizarRestante(restante)
+    formGasto.reset();
 
 }
 
